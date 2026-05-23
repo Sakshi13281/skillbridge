@@ -6,17 +6,72 @@
   <title>SkillBridge — Skill Analyzer</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .analyzer-wrap {
-      max-width: 700px;
-      margin: 0 auto;
+    .analyzer-wrap { max-width: 700px; margin: 0 auto; }
+
+    .input-method {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
     }
+
+    .method-card {
+      background: var(--bg2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .method-card:hover { border-color: var(--cyan); }
+    .method-card.active {
+      border-color: var(--cyan);
+      background: var(--cyan-glow);
+    }
+    .method-icon { font-size: 2rem; margin-bottom: 0.6rem; }
+    .method-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; }
+    .method-desc  { font-size: 0.78rem; color: var(--muted); }
+
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 1rem;
+    }
+    .upload-area:hover { border-color: var(--cyan); background: var(--cyan-glow); }
+    .upload-area.dragging { border-color: var(--cyan); background: var(--cyan-glow); }
+    .upload-icon  { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .upload-title { font-weight: 600; margin-bottom: 0.3rem; }
+    .upload-desc  { font-size: 0.82rem; color: var(--muted); }
+
+    .upload-result {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .upload-result.show { display: block; }
+    .upload-result-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .upload-filename { font-weight: 600; font-size: 0.9rem; }
+    .upload-summary  { font-size: 0.83rem; color: var(--muted); line-height: 1.5; }
 
     .role-selector {
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 1rem;
       align-items: end;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
 
     .skill-card {
@@ -28,6 +83,7 @@
       transition: border-color 0.2s;
     }
     .skill-card:hover { border-color: var(--cyan); }
+    .skill-card.ai-filled { border-color: rgba(0,212,255,0.3); }
 
     .skill-header {
       display: flex;
@@ -35,32 +91,12 @@
       align-items: center;
       margin-bottom: 0.75rem;
     }
-    .skill-name {
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-    .skill-value {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--cyan);
-      min-width: 2.5rem;
-      text-align: right;
-    }
+    .skill-name  { font-weight: 600; font-size: 0.95rem; }
+    .skill-value { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--cyan); min-width: 2.5rem; text-align: right; }
 
-    .level-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-top: 0.4rem;
-    }
+    .skill-reason { font-size: 0.75rem; color: var(--cyan); margin-top: 0.4rem; opacity: 0.8; }
 
-    .skills-loading {
-      text-align: center;
-      padding: 3rem;
-      color: var(--muted);
-    }
+    .level-labels { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-top: 0.4rem; }
 
     .analyze-bar {
       position: sticky;
@@ -81,6 +117,24 @@
     }
     .analyze-bar-text { font-size: 0.875rem; color: var(--muted); }
     .analyze-bar-text strong { color: var(--text); display: block; font-size: 1rem; }
+
+    .ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: var(--cyan-glow);
+      border: 1px solid rgba(0,212,255,0.25);
+      color: var(--cyan);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      margin-left: 0.5rem;
+    }
+
+    @media(max-width:580px) {
+      .input-method { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -92,7 +146,7 @@
     <li><a href="analyzer.html" class="active">Analyzer</a></li>
     <li><a href="dashboard.html">Dashboard</a></li>
     <li><a href="roadmap.html">Roadmap</a></li>
-    <li><a href="profile.html" id="nav-user">Profile</a></li>
+    <li><a href="profile.html">Profile</a></li>
   </ul>
 </nav>
 
@@ -101,10 +155,29 @@
 
     <div class="page-header">
       <h1>Skill Analyzer</h1>
-      <p>Rate your current skills honestly — Gemini AI will analyse your gaps.</p>
+      <p>Upload your resume or rate your skills manually — Gemini AI will analyse your gaps.</p>
     </div>
 
+    <!-- Step 1: Choose method -->
     <div class="card" style="margin-bottom:1.5rem;">
+      <p style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.75rem;font-weight:600;">Step 1 — How do you want to enter your skills?</p>
+      <div class="input-method">
+        <div class="method-card" id="method-upload" onclick="selectMethod('upload')">
+          <div class="method-icon">📄</div>
+          <div class="method-title">Upload Resume</div>
+          <div class="method-desc">AI extracts your skills automatically from your PDF</div>
+        </div>
+        <div class="method-card active" id="method-manual" onclick="selectMethod('manual')">
+          <div class="method-icon">🎚️</div>
+          <div class="method-title">Rate Manually</div>
+          <div class="method-desc">Move sliders to rate each skill yourself</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Role selector -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <p style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.75rem;font-weight:600;">Step 2 — Select your target job role</p>
       <div class="role-selector">
         <div class="form-group">
           <label>Target Job Role</label>
@@ -114,18 +187,47 @@
         </div>
         <button class="btn btn-ghost" onclick="loadSkills()">Load Skills</button>
       </div>
-      <div class="alert alert-info show" id="tip">
-        💡 Select a role above and click "Load Skills" to begin rating.
+    </div>
+
+    <!-- Upload section -->
+    <div id="upload-section" style="display:none;">
+      <div class="card" style="margin-bottom:1.5rem;">
+        <p style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.75rem;font-weight:600;">Step 3 — Upload your resume</p>
+
+        <div class="upload-area" id="upload-area"
+          onclick="document.getElementById('file-input').click()"
+          ondragover="handleDragOver(event)"
+          ondragleave="handleDragLeave(event)"
+          ondrop="handleDrop(event)">
+          <div class="upload-icon">📂</div>
+          <div class="upload-title">Click to upload or drag and drop</div>
+          <div class="upload-desc">PDF files only — max 5MB</div>
+        </div>
+
+        <input type="file" id="file-input" accept=".pdf" style="display:none;" onchange="handleFileSelect(event)">
+
+        <div class="alert" id="upload-alert"></div>
+
+        <div class="upload-result" id="upload-result">
+          <div class="upload-result-top">
+            <span class="upload-filename" id="upload-filename">resume.pdf</span>
+            <span class="badge badge-cyan">✓ AI Extracted</span>
+          </div>
+          <div class="upload-summary" id="upload-summary"></div>
+        </div>
+
       </div>
     </div>
 
+    <!-- Skills area -->
     <div id="skills-area"></div>
 
+    <!-- Sticky analyse bar -->
     <div class="analyze-bar" id="analyze-bar" style="display:none;">
       <div class="analyze-bar-inner">
         <div class="analyze-bar-text">
           <strong id="bar-role">Data Analyst</strong>
-          Rate each skill, then analyse
+          <span id="bar-hint">Rate each skill then analyse</span>
         </div>
         <button class="btn btn-primary btn-lg" onclick="runAnalysis()" id="analyze-btn">
           Analyse My Skills →
@@ -140,8 +242,17 @@
 <script>
   if (!requireLogin()) {}
 
-  let currentSkills = [];
-  let currentRole   = '';
+  let currentSkills  = [];
+  let currentRole    = '';
+  let currentMethod  = 'manual';
+  let aiReasons      = {};
+
+  function selectMethod(method) {
+    currentMethod = method;
+    document.getElementById('method-upload').classList.toggle('active', method === 'upload');
+    document.getElementById('method-manual').classList.toggle('active', method === 'manual');
+    document.getElementById('upload-section').style.display = method === 'upload' ? 'block' : 'none';
+  }
 
   async function init() {
     const roles = await SkillsAPI.getRoles();
@@ -149,7 +260,6 @@
     sel.innerHTML = '<option value="">— Select a role —</option>' +
       roles.map(r => `<option value="${r.id}" data-name="${r.title}">${r.title}</option>`).join('');
 
-    // Pre-select role from URL params
     const params = new URLSearchParams(window.location.search);
     const roleId = params.get('role');
     if (roleId) {
@@ -168,39 +278,156 @@
     document.getElementById('bar-role').textContent = currentRole;
 
     const area = document.getElementById('skills-area');
-    area.innerHTML = `<div class="skills-loading"><div class="spinner" style="margin:0 auto 0.75rem;"></div>Loading skills...</div>`;
+    area.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--muted);">
+      <div class="spinner" style="margin:0 auto 0.75rem;"></div>Loading skills...</div>`;
 
     try {
       const data    = await SkillsAPI.getRoleSkills(roleId);
       currentSkills = data.skills;
-
-      area.innerHTML = currentSkills.map((skill, i) => `
-        <div class="skill-card">
-          <div class="skill-header">
-            <span class="skill-name">${skill}</span>
-            <span class="skill-value" id="val-${i}">5</span>
-          </div>
-          <input type="range" min="0" max="10" value="5" id="slider-${i}"
-            oninput="updateSlider(${i})"
-            style="width:100%;">
-          <div class="level-labels">
-            <span>0 — No knowledge</span>
-            <span>5 — Some experience</span>
-            <span>10 — Expert</span>
-          </div>
-        </div>
-      `).join('');
-
+      renderSliders(currentSkills, {});
       document.getElementById('analyze-bar').style.display = 'block';
-      document.getElementById('tip').style.display = 'none';
     } catch {
       area.innerHTML = '<p style="color:var(--red);">Could not load skills. Is the backend running?</p>';
     }
   }
 
+  function renderSliders(skills, prefilled) {
+    const area = document.getElementById('skills-area');
+    area.innerHTML = skills.map((skill, i) => {
+      const val    = prefilled[skill] !== undefined ? prefilled[skill] : 5;
+      const reason = aiReasons[skill] || '';
+      const isAI   = prefilled[skill] !== undefined;
+      return `
+        <div class="skill-card ${isAI ? 'ai-filled' : ''}">
+          <div class="skill-header">
+            <span class="skill-name">
+              ${skill}
+              ${isAI ? '<span class="ai-badge">✦ AI filled</span>' : ''}
+            </span>
+            <span class="skill-value" id="val-${i}">${val}</span>
+          </div>
+          <input type="range" min="0" max="10" value="${val}" id="slider-${i}"
+            oninput="updateSlider(${i})" style="width:100%;">
+          <div class="level-labels">
+            <span>0 — No knowledge</span>
+            <span>5 — Some experience</span>
+            <span>10 — Expert</span>
+          </div>
+          ${reason ? `<div class="skill-reason">💡 ${reason}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
   function updateSlider(i) {
     const val = document.getElementById(`slider-${i}`).value;
     document.getElementById(`val-${i}`).textContent = val;
+  }
+
+  // ── DRAG AND DROP ──
+  function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('upload-area').classList.add('dragging');
+  }
+  function handleDragLeave(e) {
+    document.getElementById('upload-area').classList.remove('dragging');
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('upload-area').classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  }
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+  }
+
+  async function processFile(file) {
+    if (!file.name.endsWith('.pdf')) {
+      showUploadAlert('Please upload a PDF file only.', 'error');
+      return;
+    }
+
+    const roleId = document.getElementById('role-select').value;
+    if (!roleId) {
+      showUploadAlert('Please select a job role first in Step 2.', 'error');
+      return;
+    }
+
+    // Show loading state
+    const area = document.getElementById('upload-area');
+    area.innerHTML = `<div class="spinner" style="margin:0 auto 0.75rem;"></div>
+      <div class="upload-title">Reading your resume...</div>
+      <div class="upload-desc">Groq AI is extracting your skills</div>`;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(
+        `http://127.0.0.1:8000/resume/extract?job_role=${encodeURIComponent(currentRole || 'Software Developer')}`,
+        {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          body: formData
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.detail) throw new Error(result.detail);
+
+      // Build prefilled ratings from AI extracted skills
+      const prefilled = {};
+      aiReasons = {};
+      result.extracted_skills.forEach(s => {
+        // Match extracted skill to our skill list (case insensitive partial match)
+        const match = currentSkills.find(cs =>
+          cs.toLowerCase().includes(s.name.toLowerCase()) ||
+          s.name.toLowerCase().includes(cs.toLowerCase())
+        );
+        if (match) {
+          prefilled[match] = s.level;
+          aiReasons[match] = s.reason;
+        }
+      });
+
+      // Show success
+      document.getElementById('upload-filename').textContent = file.name;
+      document.getElementById('upload-summary').textContent  = result.summary;
+      document.getElementById('upload-result').classList.add('show');
+
+      area.innerHTML = `<div class="upload-icon">✅</div>
+        <div class="upload-title">Resume uploaded successfully!</div>
+        <div class="upload-desc">Skills have been pre-filled — adjust any slider if needed</div>`;
+
+      // Re-render sliders with AI values
+      if (currentSkills.length > 0) {
+        renderSliders(currentSkills, prefilled);
+        document.getElementById('analyze-bar').style.display = 'block';
+        document.getElementById('bar-hint').textContent = 'AI pre-filled your skills — adjust if needed';
+      } else {
+        // Skills not loaded yet — load them first
+        await loadSkills();
+        renderSliders(currentSkills, prefilled);
+      }
+
+      showUploadAlert(`✓ Extracted ${result.extracted_skills.length} skills from your resume!`, 'success');
+
+    } catch(e) {
+      area.innerHTML = `<div class="upload-icon">📂</div>
+        <div class="upload-title">Click to upload or drag and drop</div>
+        <div class="upload-desc">PDF files only — max 5MB</div>`;
+      showUploadAlert('Upload failed: ' + e.message, 'error');
+    }
+  }
+
+  function showUploadAlert(msg, type) {
+    const el = document.getElementById('upload-alert');
+    el.textContent = msg;
+    el.className   = `alert alert-${type} show`;
+    setTimeout(() => el.className = 'alert', 4000);
   }
 
   async function runAnalysis() {
@@ -220,7 +447,7 @@
       if (result.detail) throw new Error(result.detail);
       saveAnalysis(result);
       window.location.href = 'results.html';
-    } catch (e) {
+    } catch(e) {
       btn.innerHTML = 'Analyse My Skills →';
       btn.disabled  = false;
       alert('Analysis failed: ' + e.message);

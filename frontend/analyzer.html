@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge — Skill Analyzer</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .analyzer-wrap {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .role-selector {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: end;
+      margin-bottom: 2rem;
+    }
+
+    .skill-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s;
+    }
+    .skill-card:hover { border-color: var(--cyan); }
+
+    .skill-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .skill-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .skill-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--cyan);
+      min-width: 2.5rem;
+      text-align: right;
+    }
+
+    .level-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+    }
+
+    .skills-loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+    }
+
+    .analyze-bar {
+      position: sticky;
+      bottom: 1.5rem;
+      margin-top: 2rem;
+    }
+    .analyze-bar-inner {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .analyze-bar-text { font-size: 0.875rem; color: var(--muted); }
+    .analyze-bar-text strong { color: var(--text); display: block; font-size: 1rem; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Skill<span>Bridge</span></div>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="analyzer.html" class="active">Analyzer</a></li>
+    <li><a href="dashboard.html">Dashboard</a></li>
+    <li><a href="roadmap.html">Roadmap</a></li>
+    <li><a href="profile.html" id="nav-user">Profile</a></li>
+  </ul>
+</nav>
+
+<div class="container page">
+  <div class="analyzer-wrap">
+
+    <div class="page-header">
+      <h1>Skill Analyzer</h1>
+      <p>Rate your current skills honestly — Gemini AI will analyse your gaps.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="role-selector">
+        <div class="form-group">
+          <label>Target Job Role</label>
+          <select id="role-select">
+            <option value="">Loading roles...</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost" onclick="loadSkills()">Load Skills</button>
+      </div>
+      <div class="alert alert-info show" id="tip">
+        💡 Select a role above and click "Load Skills" to begin rating.
+      </div>
+    </div>
+
+    <div id="skills-area"></div>
+
+    <div class="analyze-bar" id="analyze-bar" style="display:none;">
+      <div class="analyze-bar-inner">
+        <div class="analyze-bar-text">
+          <strong id="bar-role">Data Analyst</strong>
+          Rate each skill, then analyse
+        </div>
+        <button class="btn btn-primary btn-lg" onclick="runAnalysis()" id="analyze-btn">
+          Analyse My Skills →
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+  if (!requireLogin()) {}
+
+  let currentSkills = [];
+  let currentRole   = '';
+
+  async function init() {
+    const roles = await SkillsAPI.getRoles();
+    const sel   = document.getElementById('role-select');
+    sel.innerHTML = '<option value="">— Select a role —</option>' +
+      roles.map(r => `<option value="${r.id}" data-name="${r.title}">${r.title}</option>`).join('');
+
+    // Pre-select role from URL params
+    const params = new URLSearchParams(window.location.search);
+    const roleId = params.get('role');
+    if (roleId) {
+      sel.value = roleId;
+      await loadSkills();
+    }
+  }
+
+  async function loadSkills() {
+    const sel    = document.getElementById('role-select');
+    const roleId = sel.value;
+    const opt    = sel.options[sel.selectedIndex];
+    if (!roleId) return;
+
+    currentRole = opt.getAttribute('data-name');
+    document.getElementById('bar-role').textContent = currentRole;
+
+    const area = document.getElementById('skills-area');
+    area.innerHTML = `<div class="skills-loading"><div class="spinner" style="margin:0 auto 0.75rem;"></div>Loading skills...</div>`;
+
+    try {
+      const data    = await SkillsAPI.getRoleSkills(roleId);
+      currentSkills = data.skills;
+
+      area.innerHTML = currentSkills.map((skill, i) => `
+        <div class="skill-card">
+          <div class="skill-header">
+            <span class="skill-name">${skill}</span>
+            <span class="skill-value" id="val-${i}">5</span>
+          </div>
+          <input type="range" min="0" max="10" value="5" id="slider-${i}"
+            oninput="updateSlider(${i})"
+            style="width:100%;">
+          <div class="level-labels">
+            <span>0 — No knowledge</span>
+            <span>5 — Some experience</span>
+            <span>10 — Expert</span>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('analyze-bar').style.display = 'block';
+      document.getElementById('tip').style.display = 'none';
+    } catch {
+      area.innerHTML = '<p style="color:var(--red);">Could not load skills. Is the backend running?</p>';
+    }
+  }
+
+  function updateSlider(i) {
+    const val = document.getElementById(`slider-${i}`).value;
+    document.getElementById(`val-${i}`).textContent = val;
+  }
+
+  async function runAnalysis() {
+    if (!currentSkills.length) return;
+
+    const btn = document.getElementById('analyze-btn');
+    btn.innerHTML = '<div class="spinner"></div> Analysing...';
+    btn.disabled  = true;
+
+    const ratings = {};
+    currentSkills.forEach((skill, i) => {
+      ratings[skill] = parseInt(document.getElementById(`slider-${i}`).value);
+    });
+
+    try {
+      const result = await AnalysisAPI.run(currentRole, ratings);
+      if (result.detail) throw new Error(result.detail);
+      saveAnalysis(result);
+      window.location.href = 'results.html';
+    } catch (e) {
+      btn.innerHTML = 'Analyse My Skills →';
+      btn.disabled  = false;
+      alert('Analysis failed: ' + e.message);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

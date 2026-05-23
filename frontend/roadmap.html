@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge — My Roadmap</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .roadmap-wrap { max-width: 760px; margin: 0 auto; }
+
+    .progress-summary {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .progress-summary-text { flex: 1; }
+    .progress-summary-text h3 { font-size: 1rem; margin-bottom: 0.3rem; }
+    .progress-summary-text p  { font-size: 0.83rem; color: var(--muted); }
+    .progress-pct {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--cyan);
+    }
+
+    .week-block { margin-bottom: 2rem; }
+
+    .week-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.85rem;
+    }
+    .week-badge {
+      background: var(--cyan-glow);
+      border: 1px solid rgba(0,212,255,0.25);
+      color: var(--cyan);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.75rem;
+      border-radius: 99px;
+      white-space: nowrap;
+    }
+    .week-theme {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .task-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 0.6rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: all 0.2s;
+    }
+    .task-card:hover { border-color: var(--cyan); }
+    .task-card.done {
+      opacity: 0.55;
+      border-color: var(--border);
+    }
+    .task-card.done .task-title { text-decoration: line-through; }
+
+    .task-body { flex: 1; }
+    .task-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.3rem;
+      flex-wrap: wrap;
+    }
+    .task-title { font-weight: 600; font-size: 0.9rem; }
+    .task-meta  { display: flex; align-items: center; gap: 0.6rem; }
+    .task-hours { font-size: 0.76rem; color: var(--muted); }
+    .task-desc  { font-size: 0.83rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.5rem; }
+    .task-link  {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.78rem;
+      color: var(--cyan);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Skill<span>Bridge</span></div>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="analyzer.html">Analyzer</a></li>
+    <li><a href="dashboard.html">Dashboard</a></li>
+    <li><a href="roadmap.html" class="active">Roadmap</a></li>
+    <li><a href="profile.html">Profile</a></li>
+  </ul>
+</nav>
+
+<div class="container page">
+  <div class="roadmap-wrap">
+
+    <div id="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading your roadmap...</p>
+    </div>
+
+    <div id="content" style="display:none;">
+
+      <div class="page-header">
+        <h1>My Learning Roadmap</h1>
+        <p>Your personalised week-by-week plan to close every skill gap.</p>
+      </div>
+
+      <div class="progress-summary">
+        <div class="progress-pct" id="prog-pct">0%</div>
+        <div class="progress-summary-text">
+          <h3>Overall Progress</h3>
+          <p id="prog-label">0 of 0 tasks completed</p>
+          <div class="progress-bar" style="margin-top:0.6rem;width:200px;">
+            <div class="progress-fill" id="prog-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <a href="results.html" class="btn btn-ghost">← Back to Results</a>
+      </div>
+
+      <div id="weeks-container"></div>
+
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+  if (!requireLogin()) {}
+
+  const TYPE_ICONS = {
+    course:'📚', video:'🎬', documentation:'📄', practice:'⚒️'
+  };
+
+  let totalTasks = 0;
+  let doneTasks  = 0;
+
+  function updateProgress() {
+    const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+    document.getElementById('prog-pct').textContent   = pct + '%';
+    document.getElementById('prog-label').textContent = `${doneTasks} of ${totalTasks} tasks completed`;
+    document.getElementById('prog-bar').style.width   = pct + '%';
+  }
+
+  async function toggleTask(taskId, cardEl) {
+    const result = await RoadmapAPI.toggleTask(taskId);
+    const isDone = result.is_completed;
+    cardEl.classList.toggle('done', isDone);
+    const cb = cardEl.querySelector('.task-check');
+    if (cb) cb.checked = isDone;
+    doneTasks += isDone ? 1 : -1;
+    updateProgress();
+  }
+
+  function renderWeeks(weeks) {
+    const container = document.getElementById('weeks-container');
+    totalTasks = 0;
+    doneTasks  = 0;
+
+    container.innerHTML = weeks.map(week => {
+      const tasks = week.tasks || [];
+      totalTasks += tasks.length;
+      doneTasks  += tasks.filter(t => t.is_completed).length;
+
+      return `
+        <div class="week-block">
+          <div class="week-header">
+            <span class="week-badge">Week ${week.week_number}</span>
+            <span class="week-theme">${week.theme || ''}</span>
+          </div>
+          ${tasks.map(task => `
+            <div class="task-card ${task.is_completed ? 'done' : ''}" id="task-${task.id}">
+              <input type="checkbox" class="task-check"
+                ${task.is_completed ? 'checked' : ''}
+                onchange="toggleTask(${task.id}, document.getElementById('task-${task.id}'))">
+              <div class="task-body">
+                <div class="task-top">
+                  <span class="task-title">${task.title}</span>
+                  <div class="task-meta">
+                    <span class="badge badge-cyan">${task.skill_name}</span>
+                    <span class="task-hours">~${task.estimated_hours || 2}h</span>
+                    <span>${TYPE_ICONS[task.resource_type] || '📄'}</span>
+                  </div>
+                </div>
+                <div class="task-desc">${task.description}</div>
+                ${task.resource_url ? `
+                  <a href="${task.resource_url}" target="_blank" class="task-link">
+                    Open resource ↗
+                  </a>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }).join('');
+
+    updateProgress();
+  }
+
+  async function load() {
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+
+    try {
+      let data = getRoadmap();
+      if (!data || !data.weeks) {
+        data = await RoadmapAPI.getLatest();
+      }
+      if (data.detail) throw new Error(data.detail);
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+
+      renderWeeks(data.weeks || []);
+    } catch(e) {
+      loading.innerHTML = `
+        <p style="color:var(--red);">${e.message}</p>
+        <a href="results.html" class="btn btn-ghost" style="margin-top:1rem;">← Go to Results</a>
+      `;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

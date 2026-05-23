@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge — Your Results</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── TOP SECTION ── */
+    .results-top {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2rem;
+      align-items: start;
+      margin-bottom: 2rem;
+    }
+    @media(max-width:640px){ .results-top { grid-template-columns: 1fr; } }
+
+    .score-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      text-align: center;
+      min-width: 200px;
+    }
+    .score-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+    .summary-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+    }
+    .summary-role {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--cyan);
+      margin-bottom: 0.5rem;
+    }
+    .summary-text {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ── SKILL BARS ── */
+    .skill-row {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .skill-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .skill-row-name { font-weight: 600; font-size: 0.95rem; }
+    .skill-row-meta { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; color: var(--muted); }
+
+    .dual-bar { display: flex; flex-direction: column; gap: 0.3rem; }
+    .bar-row  { display: flex; align-items: center; gap: 0.6rem; font-size: 0.75rem; color: var(--muted); }
+    .bar-wrap { flex: 1; background: var(--bg3); border-radius: 99px; height: 5px; overflow: hidden; }
+    .bar-fill  { height: 100%; border-radius: 99px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .bar-user  { background: var(--cyan); }
+    .bar-req   { background: var(--muted); opacity: 0.5; }
+    .bar-label { width: 55px; text-align: right; }
+
+    .why-text {
+      margin-top: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+      line-height: 1.55;
+    }
+    .resource-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--cyan);
+    }
+
+    /* ── JOB PREDICTION ── */
+    .prediction-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+    }
+    .prediction-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .prediction-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .chance-display {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .chance-number {
+      font-family: 'Syne', sans-serif;
+      font-size: 3rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .chance-info {}
+    .chance-label {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+    .chance-sub { font-size: 0.8rem; color: var(--muted); }
+
+    .chance-bar-wrap {
+      background: var(--bg3);
+      border-radius: 99px;
+      height: 10px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .chance-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .prediction-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    @media(max-width:580px){ .prediction-grid { grid-template-columns: 1fr; } }
+
+    .pred-box {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+    }
+    .pred-box-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.65rem;
+      font-weight: 600;
+    }
+    .pred-box-title.green { color: var(--green); }
+    .pred-box-title.red   { color: var(--red); }
+
+    .pred-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+      line-height: 1.45;
+    }
+    .pred-item::before { content: '→'; flex-shrink: 0; margin-top: 0.05rem; }
+
+    .boost-box {
+      background: rgba(0,212,255,0.06);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .boost-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--cyan); font-weight: 600; margin-bottom: 0.4rem; }
+    .boost-text  { font-size: 0.875rem; color: var(--text); }
+
+    .market-box {
+      background: var(--bg3);
+      border-radius: var(--radius);
+      padding: 0.85rem 1.1rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .market-box strong { color: var(--text); }
+
+    /* chance colour helpers */
+    .chance-low      { color: var(--red); }
+    .chance-moderate { color: var(--amber); }
+    .chance-good     { color: var(--cyan); }
+    .chance-strong   { color: var(--green); }
+
+    .bar-low      { background: var(--red); }
+    .bar-moderate { background: var(--amber); }
+    .bar-good     { background: var(--cyan); }
+    .bar-strong   { background: var(--green); }
+
+    /* action bar */
+    .action-bar {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Skill<span>Bridge</span></div>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="analyzer.html">Analyzer</a></li>
+    <li><a href="dashboard.html">Dashboard</a></li>
+    <li><a href="roadmap.html">Roadmap</a></li>
+    <li><a href="profile.html">Profile</a></li>
+  </ul>
+</nav>
+
+<div class="container page">
+
+  <div id="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading your results...</p>
+  </div>
+
+  <div id="content" style="display:none;">
+
+    <div class="page-header">
+      <h1>Your Analysis Results</h1>
+      <p id="result-subtitle">Here's how you compare to a real job requirement.</p>
+    </div>
+
+    <!-- Score + Summary -->
+    <div class="results-top">
+      <div class="score-block">
+        <div class="score-label">Readiness Score</div>
+        <div class="score-ring">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg3)" stroke-width="10"/>
+            <circle cx="70" cy="70" r="58" fill="none" stroke="var(--cyan)" stroke-width="10"
+              stroke-linecap="round"
+              stroke-dasharray="364"
+              stroke-dashoffset="364"
+              id="score-circle"/>
+          </svg>
+          <div class="score-ring-label">
+            <div class="score-num" id="score-num">0</div>
+            <div class="score-sub">/ 100</div>
+          </div>
+        </div>
+      </div>
+      <div class="summary-block">
+        <div class="summary-role" id="summary-role">Loading...</div>
+        <h2 style="font-size:1.2rem;margin-bottom:0.75rem;" id="summary-heading">AI Analysis</h2>
+        <div class="summary-text" id="summary-text">Loading your personalised summary...</div>
+      </div>
+    </div>
+
+    <!-- Job Hiring Prediction -->
+    <div class="prediction-card">
+      <div class="prediction-header">
+        <div class="prediction-title">🎯 Hiring Chance Prediction</div>
+        <div class="chance-display">
+          <div class="chance-number" id="chance-number">—</div>
+          <div class="chance-info">
+            <div class="chance-label" id="chance-label">—</div>
+            <div class="chance-sub">chance of getting hired now</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chance-bar-wrap">
+        <div class="chance-bar-fill" id="chance-bar" style="width:0%"></div>
+      </div>
+
+      <div class="prediction-grid">
+        <div class="pred-box">
+          <div class="pred-box-title green">✓ Your Strengths</div>
+          <div id="strengths-list"></div>
+        </div>
+        <div class="pred-box">
+          <div class="pred-box-title red">✗ What's Blocking You</div>
+          <div id="blockers-list"></div>
+        </div>
+      </div>
+
+      <div class="boost-box">
+        <div class="boost-title">⚡ Biggest Boost Action</div>
+        <div class="boost-text" id="biggest-boost">—</div>
+      </div>
+
+      <div class="market-box">
+        <strong>Market insight: </strong><span id="market-insight">—</span>
+      </div>
+    </div>
+
+    <!-- Skill Gap Breakdown -->
+    <h2 style="font-size:1.2rem;margin-bottom:1rem;">
+      Skill Gap Breakdown
+      <span style="font-size:0.8rem;font-weight:400;color:var(--muted);margin-left:0.5rem;">
+        — cyan = you, grey = required
+      </span>
+    </h2>
+    <div id="skills-list"></div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary btn-lg" onclick="generateRoadmap()" id="roadmap-btn">
+        Generate My Roadmap →
+      </button>
+      <a href="analyzer.html" class="btn btn-ghost btn-lg">Analyse Again</a>
+    </div>
+
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+  if (!requireLogin()) {}
+
+  let analysisData = null;
+
+  function getChanceClass(label) {
+    const map = { Low:'low', Moderate:'moderate', Good:'good', Strong:'strong' };
+    return map[label] || 'good';
+  }
+
+  function animateScore(target) {
+    const circle = document.getElementById('score-circle');
+    const numEl  = document.getElementById('score-num');
+    const circumference = 364;
+    let current = 0;
+    const step = target / 60;
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      numEl.textContent = Math.round(current);
+      const offset = circumference - (current / 100) * circumference;
+      circle.style.strokeDashoffset = offset;
+      if (current >= target) clearInterval(timer);
+    }, 16);
+  }
+
+  function animateChance(target) {
+    const bar   = document.getElementById('chance-bar');
+    const numEl = document.getElementById('chance-number');
+    let current = 0;
+    const step  = target / 60;
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      numEl.textContent = Math.round(current) + '%';
+      bar.style.width = current + '%';
+      if (current >= target) clearInterval(timer);
+    }, 16);
+  }
+
+  function renderSkills(skills) {
+    const container = document.getElementById('skills-list');
+    container.innerHTML = skills.map(s => {
+      const userPct = (s.user_level / 10) * 100;
+      const reqPct  = (s.required_level / 10) * 100;
+      const priorityClass = s.priority === 'high' ? 'badge-high' : s.priority === 'medium' ? 'badge-medium' : 'badge-low';
+      return `
+        <div class="skill-row">
+          <div class="skill-row-top">
+            <span class="skill-row-name">${s.name}</span>
+            <div class="skill-row-meta">
+              <span class="badge ${priorityClass}">${s.priority} priority</span>
+              <span>Gap: ${s.gap > 0 ? '+' + s.gap : s.gap}</span>
+            </div>
+          </div>
+          <div class="dual-bar">
+            <div class="bar-row">
+              <span class="bar-label">You</span>
+              <div class="bar-wrap">
+                <div class="bar-fill bar-user" style="width:0%" data-target="${userPct}"></div>
+              </div>
+              <span>${s.user_level}/10</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">Required</span>
+              <div class="bar-wrap">
+                <div class="bar-fill bar-req" style="width:0%" data-target="${reqPct}"></div>
+              </div>
+              <span>${s.required_level}/10</span>
+            </div>
+          </div>
+          <div class="why-text">
+            💡 ${s.why_it_matters}
+            ${s.top_resource ? `<br><a href="${s.top_resource.url}" target="_blank" class="resource-link">
+              📚 ${s.top_resource.title} <span style="color:var(--muted)">(${s.top_resource.type})</span>
+            </a>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Animate bars
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill[data-target]').forEach(bar => {
+        bar.style.width = bar.dataset.target + '%';
+      });
+    }, 100);
+  }
+
+  function renderPrediction(pred) {
+    const cls = getChanceClass(pred.confidence_label);
+
+    document.getElementById('chance-number').className = `chance-number chance-${cls}`;
+    document.getElementById('chance-label').textContent = pred.confidence_label;
+    document.getElementById('chance-label').className   = `chance-label chance-${cls}`;
+    document.getElementById('chance-bar').className     = `chance-bar-fill bar-${cls}`;
+
+    document.getElementById('strengths-list').innerHTML =
+      (pred.strengths || []).map(s => `<div class="pred-item">${s}</div>`).join('');
+
+    document.getElementById('blockers-list').innerHTML =
+      (pred.blockers || []).map(b => `<div class="pred-item">${b}</div>`).join('');
+
+    document.getElementById('biggest-boost').textContent  = pred.biggest_boost  || '—';
+    document.getElementById('market-insight').textContent = pred.market_insight || '—';
+
+    animateChance(pred.hiring_chance || 0);
+  }
+
+  async function load() {
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+
+    try {
+      // Try local storage first (just came from analyzer)
+      let data = getAnalysis();
+      if (!data) {
+        data = await AnalysisAPI.getLatest();
+      }
+      if (data.detail) throw new Error(data.detail);
+
+      analysisData = data;
+
+      document.getElementById('summary-role').textContent    = `Role: ${data.job_role}`;
+      document.getElementById('summary-heading').textContent = `Your ${data.job_role} Readiness`;
+      document.getElementById('summary-text').textContent    = data.summary;
+      document.getElementById('result-subtitle').textContent =
+        `Here's your AI-powered analysis for ${data.job_role}.`;
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+
+      setTimeout(() => animateScore(data.overall_score || 0), 200);
+
+      if (data.job_prediction && data.job_prediction.hiring_chance !== undefined) {
+        renderPrediction(data.job_prediction);
+      } else {
+        document.querySelector('.prediction-card').innerHTML =
+          '<p style="color:var(--muted);text-align:center;padding:1rem;">No hiring prediction data — please re-run the analysis.</p>';
+      }
+
+      renderSkills(data.skills || []);
+
+    } catch (e) {
+      loading.innerHTML = `<p style="color:var(--red);">Could not load results: ${e.message}</p>
+        <a href="analyzer.html" class="btn btn-ghost" style="margin-top:1rem;">Run Analysis</a>`;
+    }
+  }
+
+  async function generateRoadmap() {
+    if (!analysisData) return;
+    const btn = document.getElementById('roadmap-btn');
+    btn.innerHTML = '<div class="spinner"></div> Generating...';
+    btn.disabled  = true;
+
+    try {
+      const result = await RoadmapAPI.generate(
+        analysisData.analysis_id,
+        analysisData.job_role,
+        analysisData.skills
+      );
+      if (result.detail) throw new Error(result.detail);
+      saveRoadmap(result);
+      window.location.href = 'roadmap.html';
+    } catch (e) {
+      btn.innerHTML = 'Generate My Roadmap →';
+      btn.disabled  = false;
+      alert('Roadmap generation failed: ' + e.message);
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

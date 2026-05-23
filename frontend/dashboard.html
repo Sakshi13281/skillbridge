@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge — Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem 1.5rem;
+    }
+    .stat-icon {
+      font-size: 1.4rem;
+      margin-bottom: 0.75rem;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--cyan);
+      line-height: 1;
+    }
+    .stat-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    /* score card special */
+    .score-stat {
+      background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(0,212,255,0.02));
+      border-color: rgba(0,212,255,0.25);
+    }
+    .score-stat .stat-value { color: var(--cyan); }
+
+    /* progress card */
+    .progress-stat .task-progress {
+      margin-top: 0.6rem;
+    }
+
+    /* history table */
+    .history-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+    .history-head {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .history-head h2 { font-size: 1rem; font-weight: 700; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      text-align: left;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      background: var(--bg3);
+      font-weight: 500;
+    }
+    tbody tr {
+      border-top: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:hover { background: var(--bg3); }
+    tbody td {
+      padding: 1rem 1.5rem;
+      font-size: 0.875rem;
+    }
+
+    .score-pill {
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 99px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .score-high   { background: rgba(0,229,160,0.12); color: var(--green); }
+    .score-mid    { background: rgba(0,212,255,0.1);  color: var(--cyan); }
+    .score-low    { background: rgba(255,181,71,0.12); color: var(--amber); }
+
+    .empty-history {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: var(--muted);
+    }
+    .empty-history p { margin-bottom: 1rem; }
+
+    /* quick actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .action-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .action-card:hover {
+      border-color: var(--cyan);
+      transform: translateY(-2px);
+    }
+    .action-icon {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+    }
+    .action-text {}
+    .action-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+    .action-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Skill<span>Bridge</span></div>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="analyzer.html">Analyzer</a></li>
+    <li><a href="dashboard.html" class="active">Dashboard</a></li>
+    <li><a href="roadmap.html">Roadmap</a></li>
+    <li><a href="profile.html">Profile</a></li>
+  </ul>
+</nav>
+
+<div class="container page">
+
+  <div id="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading your dashboard...</p>
+  </div>
+
+  <div id="content" style="display:none;">
+
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p id="dash-subtitle">Welcome back! Here's your progress overview.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card score-stat">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-label">Readiness Score</div>
+        <div class="stat-value" id="stat-score">—</div>
+        <div class="stat-sub" id="stat-role">No analysis yet</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">Analyses Done</div>
+        <div class="stat-value" id="stat-analyses">0</div>
+        <div class="stat-sub">total sessions</div>
+      </div>
+      <div class="stat-card progress-stat">
+        <div class="stat-icon">✅</div>
+        <div class="stat-label">Tasks Completed</div>
+        <div class="stat-value" id="stat-tasks">0</div>
+        <div class="stat-sub" id="stat-tasks-sub">of 0 total tasks</div>
+        <div class="task-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="task-prog-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-label">Roadmap Progress</div>
+        <div class="stat-value" id="stat-progress">0%</div>
+        <div class="stat-sub">tasks finished</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Quick Actions</h2>
+    <div class="quick-actions">
+      <a href="analyzer.html" class="action-card">
+        <div class="action-icon">🔍</div>
+        <div class="action-text">
+          <div class="action-title">Run New Analysis</div>
+          <div class="action-desc">Rate your skills and get fresh AI insights</div>
+        </div>
+      </a>
+      <a href="results.html" class="action-card">
+        <div class="action-icon">📋</div>
+        <div class="action-text">
+          <div class="action-title">View Last Results</div>
+          <div class="action-desc">See your gap analysis and hiring prediction</div>
+        </div>
+      </a>
+      <a href="roadmap.html" class="action-card">
+        <div class="action-icon">🗺️</div>
+        <div class="action-text">
+          <div class="action-title">My Roadmap</div>
+          <div class="action-desc">Continue your week-by-week learning plan</div>
+        </div>
+      </a>
+      <a href="profile.html" class="action-card">
+        <div class="action-icon">👤</div>
+        <div class="action-text">
+          <div class="action-title">Edit Profile</div>
+          <div class="action-desc">Update your name and bio</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- History Table -->
+    <div class="history-card">
+      <div class="history-head">
+        <h2>Analysis History</h2>
+        <a href="analyzer.html" class="btn btn-ghost" style="padding:0.4rem 0.9rem;font-size:0.82rem;">+ New Analysis</a>
+      </div>
+      <div id="history-body">
+        <div class="empty-history">
+          <p>No analyses yet.</p>
+          <a href="analyzer.html" class="btn btn-primary">Run Your First Analysis</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+  if (!requireLogin()) {}
+
+  function scoreClass(score) {
+    if (score >= 75) return 'score-high';
+    if (score >= 50) return 'score-mid';
+    return 'score-low';
+  }
+
+  function formatDate(str) {
+    if (!str) return '—';
+    return new Date(str).toLocaleDateString('en-IN', {
+      day: 'numeric', month: 'short', year: 'numeric'
+    });
+  }
+
+  async function load() {
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+
+    try {
+      const stats = await DashboardAPI.getStats();
+      if (stats.detail) throw new Error(stats.detail);
+
+      // Stats cards
+      document.getElementById('stat-score').textContent     = stats.overall_score ?? '—';
+      document.getElementById('stat-role').textContent      = stats.current_role  ?? 'No analysis yet';
+      document.getElementById('stat-analyses').textContent  = stats.total_analyses ?? 0;
+      document.getElementById('stat-tasks').textContent     = stats.tasks_completed ?? 0;
+      document.getElementById('stat-tasks-sub').textContent = `of ${stats.total_tasks ?? 0} total tasks`;
+      document.getElementById('stat-progress').textContent  = (stats.progress_percent ?? 0) + '%';
+      document.getElementById('task-prog-bar').style.width  = (stats.progress_percent ?? 0) + '%';
+
+      // Subtitle with user name
+      const name = localStorage.getItem('name');
+      if (name) {
+        document.getElementById('dash-subtitle').textContent =
+          `Welcome back, ${name.split(' ')[0]}! Here's your progress overview.`;
+      }
+
+      // History table
+      const history = stats.history || [];
+      if (history.length > 0) {
+        document.getElementById('history-body').innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Score</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${history.map(h => `
+                <tr>
+                  <td style="font-weight:500;">${h.job_role}</td>
+                  <td><span class="score-pill ${scoreClass(h.overall_score)}">${h.overall_score}</span></td>
+                  <td style="color:var(--muted);">${formatDate(h.created_at)}</td>
+                  <td><a href="results.html" class="btn btn-ghost" style="padding:0.3rem 0.75rem;font-size:0.78rem;">View</a></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+
+    } catch(e) {
+      loading.innerHTML = `<p style="color:var(--red);">Could not load dashboard: ${e.message}</p>`;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from auth import get_current_user
-from gemini import ask_gemini_json
+from ai_client import ask_ai_json
 import PyPDF2
 import io
 
@@ -93,7 +93,7 @@ Return ONLY a valid JSON object — no extra text, no markdown:
 """
 
     try:
-        result = await ask_gemini_json(prompt)
+        result = await ask_ai_json(prompt)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI extraction failed: {str(e)}")
 

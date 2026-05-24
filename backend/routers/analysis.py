@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Dict
 from database import get_db
 from auth import get_current_user
-from gemini import ask_gemini_json
+from ai_client import ask_ai_json
 import aiosqlite
 import json
 
@@ -133,7 +133,7 @@ async def run_analysis(
     )
 
     try:
-        result = await ask_gemini_json(prompt)
+        result = await ask_ai_json(prompt)
     except Exception as e:
         
         raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")

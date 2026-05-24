@@ -41,7 +41,7 @@ async def ask_gemini(prompt: str) -> str:
         return data["choices"][0]["message"]["content"]
 
 
-async def ask_gemini_json(prompt: str) -> dict:
+async def ask_ai_json(prompt: str) -> dict:
     """
     Same as ask_gemini but returns parsed JSON.
     """

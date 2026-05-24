@@ -6,6 +6,65 @@
   <title>SkillBridge — Know Your Gap</title>
   <link rel="stylesheet" href="style.css">
   <style>
+    /* ── Warm-up overlay ── */
+    #warmup-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.25rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #warmup-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .warmup-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .warmup-logo span { color: var(--cyan); }
+    .warmup-msg {
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-align: center;
+      max-width: 280px;
+      line-height: 1.6;
+    }
+    .warmup-bar-wrap {
+      width: 220px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .warmup-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--cyan);
+      border-radius: 99px;
+      animation: warmup-fill 45s linear forwards;
+    }
+    @keyframes warmup-fill {
+      0%   { width: 0%; }
+      80%  { width: 85%; }
+      100% { width: 92%; }
+    }
+    .warmup-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      opacity: 0.6;
+    }
+
+    /* ── rest of page styles ── */
     .hero {
       text-align: center;
       padding: 5rem 1.5rem 3.5rem;
@@ -119,6 +178,17 @@
 </head>
 <body>
 
+<!-- Warm-up overlay — only visible if backend takes >2s to respond -->
+<div id="warmup-overlay">
+  <div class="warmup-logo">Skill<span>Bridge</span></div>
+  <div class="spinner"></div>
+  <div class="warmup-msg">Waking up the server — this takes about 30–60 seconds on the free tier. Hang tight!</div>
+  <div class="warmup-bar-wrap">
+    <div class="warmup-bar"></div>
+  </div>
+  <div class="warmup-hint">Only happens after 15 min of inactivity</div>
+</div>
+
 <nav>
   <div class="nav-logo">Skill<span>Bridge</span></div>
   <ul class="nav-links">
@@ -133,7 +203,7 @@
 <div class="hero">
   <div class="hero-tag">✦ AI-Powered Skill Analysis</div>
   <h1>Know your gap.<br>Close it <span>faster.</span></h1>
-  <p>SkillBridge uses Gemini AI to analyse your skills against real job requirements and build a personalised learning roadmap.</p>
+  <p>SkillBridge uses AI to analyse your skills against real job requirements and build a personalised learning roadmap.</p>
   <div class="hero-actions">
     <a href="analyzer.html" class="btn btn-primary btn-lg">Analyse My Skills</a>
     <a href="login.html" class="btn btn-ghost btn-lg">Create Account</a>
@@ -165,7 +235,7 @@
     <div class="step-card">
       <div class="step-num">03</div>
       <div class="step-title">Get AI analysis</div>
-      <div class="step-desc">Gemini AI analyses your gaps and predicts your hiring chances.</div>
+      <div class="step-desc">AI analyses your gaps and predicts your hiring chances.</div>
     </div>
     <div class="step-card">
       <div class="step-num">04</div>
@@ -193,10 +263,29 @@
        <a href="#" onclick="logout()" style="margin-left:0.5rem;color:var(--muted);font-size:0.8rem;">Logout</a>`;
   }
 
+  // ── Warm-up logic ──
+  // Show overlay only if backend doesn't respond within 2 seconds
+  let warmupTimer = null;
+  let backendReady = false;
+
+  const overlay = document.getElementById('warmup-overlay');
+
+  warmupTimer = setTimeout(() => {
+    if (!backendReady) {
+      overlay.classList.add('visible');
+    }
+  }, 2000);
+
   async function loadRoles() {
     const grid = document.getElementById('roles-grid');
     try {
       const roles = await SkillsAPI.getRoles();
+
+      // Backend responded — hide overlay
+      backendReady = true;
+      clearTimeout(warmupTimer);
+      overlay.classList.remove('visible');
+
       grid.innerHTML = roles.map(r => `
         <a class="role-card" href="analyzer.html?role=${r.id}&roleName=${encodeURIComponent(r.title)}">
           <div class="role-icon">${ROLE_ICONS[r.icon] || '💡'}</div>
@@ -204,7 +293,11 @@
           <div class="role-desc">${r.description}</div>
         </a>
       `).join('');
+
     } catch {
+      backendReady = true;
+      clearTimeout(warmupTimer);
+      overlay.classList.remove('visible');
       grid.innerHTML = '<p style="color:var(--red);padding:2rem;">Could not load roles — make sure the backend is running.</p>';
     }
   }

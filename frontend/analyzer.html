@@ -366,7 +366,7 @@
       formData.append('file', file);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/resume/extract?job_role=${encodeURIComponent(currentRole || 'Software Developer')}`,
+        `${API}/resume/extract?job_role=${encodeURIComponent(currentRole || 'Software Developer')}`,
         {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },

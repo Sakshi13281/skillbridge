@@ -33,6 +33,37 @@
     .method-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; }
     .method-desc  { font-size: 0.78rem; color: var(--muted); }
 
+    /* Upload/Paste tabs */
+    .upload-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 1rem;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .upload-tab {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--bg2);
+      color: var(--muted);
+      border: none;
+      transition: all 0.2s;
+    }
+    .upload-tab.active {
+      background: var(--cyan-glow);
+      color: var(--cyan);
+      border-bottom: 2px solid var(--cyan);
+    }
+    .upload-tab:hover:not(.active) { color: var(--text); }
+
+    .upload-panel { display: none; }
+    .upload-panel.active { display: block; }
+
     .upload-area {
       border: 2px dashed var(--border);
       border-radius: var(--radius-lg);
@@ -47,6 +78,29 @@
     .upload-icon  { font-size: 2.5rem; margin-bottom: 0.75rem; }
     .upload-title { font-weight: 600; margin-bottom: 0.3rem; }
     .upload-desc  { font-size: 0.82rem; color: var(--muted); }
+
+    /* Paste text area */
+    .paste-area {
+      width: 100%;
+      min-height: 180px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.85rem;
+      line-height: 1.6;
+      padding: 1rem;
+      resize: vertical;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+      margin-bottom: 0.75rem;
+    }
+    .paste-area:focus {
+      outline: none;
+      border-color: var(--cyan);
+    }
+    .paste-area::placeholder { color: var(--muted); }
 
     .upload-result {
       background: var(--bg2);
@@ -155,7 +209,7 @@
 
     <div class="page-header">
       <h1>Skill Analyzer</h1>
-      <p>Upload your resume or rate your skills manually — Gemini AI will analyse your gaps.</p>
+      <p>Upload your resume or rate your skills manually — AI will analyse your gaps.</p>
     </div>
 
     <!-- Step 1: Choose method -->
@@ -165,7 +219,7 @@
         <div class="method-card" id="method-upload" onclick="selectMethod('upload')">
           <div class="method-icon">📄</div>
           <div class="method-title">Upload Resume</div>
-          <div class="method-desc">AI extracts your skills automatically from your PDF</div>
+          <div class="method-desc">AI extracts your skills automatically from your PDF or pasted text</div>
         </div>
         <div class="method-card active" id="method-manual" onclick="selectMethod('manual')">
           <div class="method-icon">🎚️</div>
@@ -194,19 +248,38 @@
       <div class="card" style="margin-bottom:1.5rem;">
         <p style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.75rem;font-weight:600;">Step 3 — Upload your resume</p>
 
-        <div class="upload-area" id="upload-area"
-          onclick="document.getElementById('file-input').click()"
-          ondragover="handleDragOver(event)"
-          ondragleave="handleDragLeave(event)"
-          ondrop="handleDrop(event)">
-          <div class="upload-icon">📂</div>
-          <div class="upload-title">Click to upload or drag and drop</div>
-          <div class="upload-desc">PDF files only — max 5MB</div>
+        <!-- PDF / Paste tabs -->
+        <div class="upload-tabs">
+          <button class="upload-tab active" id="tab-pdf" onclick="switchUploadTab('pdf')">📄 Upload PDF</button>
+          <button class="upload-tab" id="tab-paste" onclick="switchUploadTab('paste')">📋 Paste Resume Text</button>
         </div>
 
-        <input type="file" id="file-input" accept=".pdf" style="display:none;" onchange="handleFileSelect(event)">
+        <!-- PDF upload panel -->
+        <div class="upload-panel active" id="panel-pdf">
+          <div class="upload-area" id="upload-area"
+            onclick="document.getElementById('file-input').click()"
+            ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave(event)"
+            ondrop="handleDrop(event)">
+            <div class="upload-icon">📂</div>
+            <div class="upload-title">Click to upload or drag and drop</div>
+            <div class="upload-desc">PDF files only — max 5MB</div>
+          </div>
+          <input type="file" id="file-input" accept=".pdf" style="display:none;" onchange="handleFileSelect(event)">
+        </div>
 
-        <div class="alert" id="upload-alert"></div>
+        <!-- Paste text panel -->
+        <div class="upload-panel" id="panel-paste">
+          <textarea
+            class="paste-area"
+            id="paste-input"
+            placeholder="Paste your resume text here...&#10;&#10;Example:&#10;John Doe | Software Developer&#10;Skills: Python, SQL, React, Node.js&#10;Experience: 2 years at XYZ Company building web apps with React and Node.js..."></textarea>
+          <button class="btn btn-primary" style="width:100%;" onclick="processPastedText()">
+            ✦ Extract Skills from Text
+          </button>
+        </div>
+
+        <div class="alert" id="upload-alert" style="margin-top:0.75rem;"></div>
 
         <div class="upload-result" id="upload-result">
           <div class="upload-result-top">
@@ -252,6 +325,13 @@
     document.getElementById('method-upload').classList.toggle('active', method === 'upload');
     document.getElementById('method-manual').classList.toggle('active', method === 'manual');
     document.getElementById('upload-section').style.display = method === 'upload' ? 'block' : 'none';
+  }
+
+  function switchUploadTab(tab) {
+    document.getElementById('tab-pdf').classList.toggle('active', tab === 'pdf');
+    document.getElementById('tab-paste').classList.toggle('active', tab === 'paste');
+    document.getElementById('panel-pdf').classList.toggle('active', tab === 'pdf');
+    document.getElementById('panel-paste').classList.toggle('active', tab === 'paste');
   }
 
   async function init() {
@@ -324,6 +404,34 @@
     document.getElementById(`val-${i}`).textContent = val;
   }
 
+  // ── Shared function to handle AI extraction result ──
+  function applyExtractedSkills(result, sourceName) {
+    const prefilled = {};
+    aiReasons = {};
+    result.extracted_skills.forEach(s => {
+      const match = currentSkills.find(cs =>
+        cs.toLowerCase().includes(s.name.toLowerCase()) ||
+        s.name.toLowerCase().includes(cs.toLowerCase())
+      );
+      if (match) {
+        prefilled[match] = s.level;
+        aiReasons[match] = s.reason;
+      }
+    });
+
+    document.getElementById('upload-filename').textContent = sourceName;
+    document.getElementById('upload-summary').textContent  = result.summary;
+    document.getElementById('upload-result').classList.add('show');
+
+    if (currentSkills.length > 0) {
+      renderSliders(currentSkills, prefilled);
+      document.getElementById('analyze-bar').style.display = 'block';
+      document.getElementById('bar-hint').textContent = 'AI pre-filled your skills — adjust if needed';
+    }
+
+    showUploadAlert(`✓ Extracted ${result.extracted_skills.length} skills!`, 'success');
+  }
+
   // ── DRAG AND DROP ──
   function handleDragOver(e) {
     e.preventDefault();
@@ -355,11 +463,10 @@
       return;
     }
 
-    // Show loading state
     const area = document.getElementById('upload-area');
     area.innerHTML = `<div class="spinner" style="margin:0 auto 0.75rem;"></div>
       <div class="upload-title">Reading your resume...</div>
-      <div class="upload-desc">Groq AI is extracting your skills</div>`;
+      <div class="upload-desc">AI is extracting your skills</div>`;
 
     try {
       const formData = new FormData();
@@ -375,51 +482,66 @@
       );
 
       const result = await response.json();
-
       if (result.detail) throw new Error(result.detail);
-
-      // Build prefilled ratings from AI extracted skills
-      const prefilled = {};
-      aiReasons = {};
-      result.extracted_skills.forEach(s => {
-        // Match extracted skill to our skill list (case insensitive partial match)
-        const match = currentSkills.find(cs =>
-          cs.toLowerCase().includes(s.name.toLowerCase()) ||
-          s.name.toLowerCase().includes(cs.toLowerCase())
-        );
-        if (match) {
-          prefilled[match] = s.level;
-          aiReasons[match] = s.reason;
-        }
-      });
-
-      // Show success
-      document.getElementById('upload-filename').textContent = file.name;
-      document.getElementById('upload-summary').textContent  = result.summary;
-      document.getElementById('upload-result').classList.add('show');
 
       area.innerHTML = `<div class="upload-icon">✅</div>
         <div class="upload-title">Resume uploaded successfully!</div>
-        <div class="upload-desc">Skills have been pre-filled — adjust any slider if needed</div>`;
+        <div class="upload-desc">Skills pre-filled — adjust any slider if needed</div>`;
 
-      // Re-render sliders with AI values
-      if (currentSkills.length > 0) {
-        renderSliders(currentSkills, prefilled);
-        document.getElementById('analyze-bar').style.display = 'block';
-        document.getElementById('bar-hint').textContent = 'AI pre-filled your skills — adjust if needed';
-      } else {
-        // Skills not loaded yet — load them first
-        await loadSkills();
-        renderSliders(currentSkills, prefilled);
-      }
-
-      showUploadAlert(`✓ Extracted ${result.extracted_skills.length} skills from your resume!`, 'success');
+      if (currentSkills.length === 0) await loadSkills();
+      applyExtractedSkills(result, file.name);
 
     } catch(e) {
       area.innerHTML = `<div class="upload-icon">📂</div>
         <div class="upload-title">Click to upload or drag and drop</div>
         <div class="upload-desc">PDF files only — max 5MB</div>`;
       showUploadAlert('Upload failed: ' + e.message, 'error');
+    }
+  }
+
+  // ── PASTE TEXT ──
+  async function processPastedText() {
+    const text = document.getElementById('paste-input').value.trim();
+
+    if (!text || text.length < 30) {
+      showUploadAlert('Please paste some resume text first (at least a few lines).', 'error');
+      return;
+    }
+
+    const roleId = document.getElementById('role-select').value;
+    if (!roleId) {
+      showUploadAlert('Please select a job role first in Step 2.', 'error');
+      return;
+    }
+
+    const btn = document.querySelector('#panel-paste .btn-primary');
+    btn.innerHTML = '<div class="spinner" style="display:inline-block;width:1rem;height:1rem;margin-right:0.5rem;"></div> Extracting skills...';
+    btn.disabled = true;
+
+    try {
+      const response = await fetch(
+        `${API}/resume/extract-text?job_role=${encodeURIComponent(currentRole || 'Software Developer')}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ text })
+        }
+      );
+
+      const result = await response.json();
+      if (result.detail) throw new Error(result.detail);
+
+      if (currentSkills.length === 0) await loadSkills();
+      applyExtractedSkills(result, 'Pasted resume text');
+
+    } catch(e) {
+      showUploadAlert('Extraction failed: ' + e.message, 'error');
+    } finally {
+      btn.innerHTML = '✦ Extract Skills from Text';
+      btn.disabled = false;
     }
   }
 

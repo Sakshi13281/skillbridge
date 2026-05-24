@@ -102,3 +102,50 @@ Return ONLY a valid JSON object — no extra text, no markdown:
         "summary": result.get("summary", ""),
         "filename": file.filename
     }
+
+from pydantic import BaseModel
+
+class ResumeText(BaseModel):
+    text: str
+
+@router.post("/extract-text")
+async def extract_skills_from_text(
+    data: ResumeText,
+    job_role: str = "Software Developer",
+    current_user=Depends(get_current_user)
+):
+    if not data.text or len(data.text) < 30:
+        raise HTTPException(status_code=400, detail="Please provide more text.")
+
+    resume_text = data.text[:3000]
+
+    prompt = f"""
+You are an expert technical recruiter reading a resume for a {job_role} position.
+
+Resume text:
+---
+{resume_text}
+---
+
+Extract technical and professional skills. Rate each 0-10 based on evidence.
+Extract 5-10 most relevant skills for {job_role}.
+
+Return ONLY valid JSON, no markdown:
+{{
+  "extracted_skills": [
+    {{"name": "<skill>", "level": <0-10>, "reason": "<one short sentence>"}}
+  ],
+  "summary": "<2 sentences about this candidate>"
+}}
+"""
+
+    try:
+        result = await ask_ai_json(prompt)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI extraction failed: {str(e)}")
+
+    return {
+        "extracted_skills": result.get("extracted_skills", []),
+        "summary": result.get("summary", ""),
+        "filename": "pasted-text"
+    }
